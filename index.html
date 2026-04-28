@@ -6,7 +6,7 @@
 <title>ADHD Command Center — Raja</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#f5c518">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CMD CENTER">
 <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
@@ -836,15 +836,23 @@ function addTask() {
 
 function renderTasks() {
   const list = document.getElementById('taskList');
-  const empty = document.getElementById('taskEmpty');
+  let empty = document.getElementById('taskEmpty');
+  
   if (tasks.length === 0) {
     list.innerHTML = '';
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'taskEmpty';
+      empty.className = 'task-empty';
+      empty.textContent = 'No tasks yet. Brain dump below, then add tasks ↓';
+    }
     list.appendChild(empty);
     empty.style.display = 'block';
     updateStats();
     return;
   }
-  empty.style.display = 'none';
+  
+  if (empty) empty.style.display = 'none';
   const sorted = [...tasks].sort((a,b) => {
     const p = {high:0, med:1, low:2};
     if (a.done !== b.done) return a.done ? 1 : -1;
