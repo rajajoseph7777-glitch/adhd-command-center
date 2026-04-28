@@ -5,11 +5,22 @@ services:
     image: nginx:alpine
     container_name: adhd-command-center
     restart: unless-stopped
-    ports:
-      - "3333:80"
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adhd-app.rule=Host(`tracker.voxn8.com`)"
+      - "traefik.http.routers.adhd-app.entrypoints=http,https"
+      - "traefik.http.routers.adhd-app.tls=true"
+      - "traefik.http.routers.adhd-app.tls.certresolver=letsencrypt.acme"
+      - "traefik.http.services.adhd-app.loadbalancer.server.port=80"
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./manifest.json:/usr/share/nginx/html/manifest.json:ro
       - ./sw.js:/usr/share/nginx/html/sw.js:ro
       - ./icons:/usr/share/nginx/html/icons:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+networks:
+  coolify:
+    external: true
