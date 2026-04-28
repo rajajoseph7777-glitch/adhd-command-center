@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADHD Command Center — Raja</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f5c518">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CMD CENTER">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --panel: #ffffff;
+    --border: #e2e6ed;
+    --accent: #e6a817;
+    --accent-light: #fff8e7;
+    --red: #ef4444;
+    --red-light: #fff1f1;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --purple: #9333ea;
+    --muted: #94a3b8;
+    --text: #1e293b;
+    --dim: #64748b;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: #ffffff;
+    border-bottom: 3px solid var(--accent);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: #1e293b;
+  }
+  .logo span { color: var(--dim); font-weight: 400; font-size: 0.8rem; display:block; letter-spacing:1px; }
+  .clock-display {
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 700;
+    text-align: right;
+  }
+  .clock-display .date { font-size: 0.65rem; color: var(--dim); font-weight: 400; }
+
+  /* LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    padding: 14px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .panel-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  /* FOCUS TIMER */
+  .focus-panel { grid-column: 1 / 3; }
+  .timer-area {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .timer-circle {
+    position: relative;
+    width: 130px; height: 130px;
+    flex-shrink: 0;
+  }
+  .timer-circle svg { transform: rotate(-90deg); }
+  .timer-circle circle { fill: none; stroke-width: 6; }
+  .timer-circle .bg-ring { stroke: var(--border); }
+  .timer-circle .prog-ring {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+    stroke-dasharray: 339;
+    stroke-dashoffset: 339;
+  }
+  .timer-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+  }
+  .timer-text .time { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+  .timer-text .label { font-size: 0.55rem; color: var(--dim); letter-spacing:1px; }
+  .timer-controls { flex:1; }
+  .current-task-display {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+  }
+  .current-task-display .ct-label { font-size: 0.6rem; color: var(--dim); letter-spacing: 2px; margin-bottom: 4px; }
+  .current-task-display .ct-name { font-size: 0.95rem; color: var(--text); font-weight: 700; }
+  .timer-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-yellow { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(230,168,23,0.3); }
+  .btn-yellow:hover { background: #d4960e; }
+  .btn-ghost { background: transparent; color: var(--dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--dim); color: var(--text); background: var(--bg); }
+  .btn-red { background: var(--red); color: #fff; box-shadow: 0 2px 8px rgba(239,68,68,0.25); }
+  .btn-green { background: var(--green); color: #fff; }
+  .presets { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .preset-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 5px 12px;
+    background: var(--bg);
+    color: var(--dim);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover, .preset-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* TASKS */
+  .tasks-panel { grid-column: 1 / 2; }
+  .task-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .task-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    outline: none;
+  }
+  .task-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(230,168,23,0.12); }
+  .priority-sel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 8px 8px;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+  }
+  .task-list { max-height: 280px; overflow-y: auto; }
+  .task-list::-webkit-scrollbar { width: 4px; }
+  .task-list::-webkit-scrollbar-track { background: var(--border); }
+  .task-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    border-radius: 6px;
+    margin-bottom: 3px;
+  }
+  .task-item:hover { background: var(--bg); }
+  .task-item.done { opacity: 0.45; }
+  .task-item.done .task-name { text-decoration: line-through; }
+  .task-item.active-focus { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .task-check {
+    width: 18px; height: 18px;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .task-check:hover { border-color: var(--green); }
+  .task-check.checked { background: var(--green); border-color: var(--green); }
+  .task-check.checked::after { content: '✓'; color: #fff; font-size: 0.65rem; font-weight: 700; }
+  .task-name { flex: 1; font-size: 0.75rem; color: var(--text); }
+  .priority-badge {
+    font-size: 0.55rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .p-high { background: var(--red-light); color: var(--red); border: 1px solid #fecaca; }
+  .p-med { background: var(--accent-light); color: #92640a; border: 1px solid #fde68a; }
+  .p-low { background: var(--blue-light); color: var(--blue); border: 1px solid #bfdbfe; }
+  .task-actions { display: flex; gap: 4px; }
+  .task-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;
+    transition: all 0.1s;
+  }
+  .task-btn:hover { background: var(--bg); color: var(--text); }
+  .task-btn.focus-btn:hover { color: var(--accent); }
+  .task-btn.del-btn:hover { color: var(--red); background: var(--red-light); }
+  .task-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+
+  /* FINANCE TRACKER */
+  .bank-balance-row {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bank-bal-label { font-size: 0.6rem; color: #94a3b8; letter-spacing: 2px; font-weight: 700; }
+  .bank-bal-amount {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1;
+  }
+  .bank-bal-amount.positive { color: #4ade80; }
+  .bank-bal-amount.negative { color: #f87171; }
+  .fin-toggle-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .fin-toggle {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .fin-toggle.active.revenue { background: var(--green-light); border-color: var(--green); color: var(--green); }
+  .fin-toggle.active.expense { background: var(--red-light); border-color: var(--red); color: var(--red); }
+  .fin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
+  .fin-item:hover { background: var(--bg); }
+  .fin-item .fi-left { display:flex; flex-direction:column; gap:1px; }
+  .fin-item .fi-label { color: var(--text); font-size: 0.7rem; }
+  .fin-item .fi-time { color: var(--muted); font-size: 0.58rem; }
+  .fin-item .fi-type-badge {
+    font-size: 0.5rem; font-weight:700; padding: 1px 5px; border-radius: 10px; margin-right: 4px;
+  }
+  .fi-rev { background: var(--green-light); color: var(--green); }
+  .fi-exp { background: var(--red-light); color: var(--red); }
+  .fin-item .fi-amount-rev { color: var(--green); font-weight: 700; }
+  .fin-item .fi-amount-exp { color: var(--red); font-weight: 700; }
+  .fi-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.7rem; padding:2px 5px; border-radius:3px; }
+  .fi-del:hover { color:var(--red); background:var(--red-light); }
+
+  /* SPEND TRACKER (keep for compat) */
+  .spend-panel { grid-column: 2 / 3; }
+  .spend-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .spend-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    outline: none;
+  }
+  .spend-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(239,68,68,0.08); }
+  .amt-input { width: 90px; }
+  .spend-list { max-height: 180px; overflow-y: auto; margin-bottom: 10px; }
+  .spend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
+  .spend-item:hover { background: var(--bg); }
+  .spend-item .s-label { color: var(--dim); }
+  .spend-item .s-amount { color: var(--red); font-weight: 700; }
+  .spend-item .s-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.7rem; padding: 2px 5px; border-radius:3px; }
+  .spend-item .s-del:hover { color: var(--red); background: var(--red-light); }
+  .spend-summary {
+    background: var(--red-light);
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .spend-summary .total-label { font-size: 0.6rem; color: var(--dim); letter-spacing: 2px; }
+  .spend-summary .total-amt { font-size: 1.2rem; font-weight: 700; color: var(--red); }
+  .spend-summary .budget-status { font-size: 0.6rem; margin-top: 2px; }
+  .budget-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .budget-row label { font-size: 0.6rem; color: var(--dim); letter-spacing:1px; white-space: nowrap; }
+
+  /* BRAIN DUMP */
+  .dump-panel { grid-column: 1 / 3; }
+  .dump-area {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    width: 100%;
+    height: 90px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    outline: none;
+    resize: none;
+    line-height: 1.6;
+  }
+  .dump-area:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(147,51,234,0.08); }
+  .dump-note { font-size: 0.6rem; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+
+  /* STATS BAR */
+  .stats-bar {
+    grid-column: 1 / 3;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.55rem; color: var(--dim); letter-spacing: 2px; margin-top: 4px; }
+  .c-yellow { color: var(--accent); }
+  .c-green { color: var(--green); }
+  .c-red { color: var(--red); }
+  .c-blue { color: var(--blue); }
+
+  /* ALERT */
+  .drift-alert {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--red);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transform: translateX(200%);
+    transition: transform 0.3s;
+    z-index: 999;
+    max-width: 250px;
+    box-shadow: 0 8px 24px rgba(239,68,68,0.3);
+  }
+  .drift-alert.show { transform: translateX(0); }
+
+  @keyframes pulse {
+    0%, 100% { opacity:1; }
+    50% { opacity:0.3; }
+  }
+
+  /* SESSION LOG */
+  .log-panel { grid-column: 1 / 3; }
+  .log-list { max-height: 110px; overflow-y: auto; }
+  .log-item {
+    font-size: 0.65rem;
+    color: var(--dim);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .log-item .log-time { color: var(--muted); white-space: nowrap; }
+  .log-item .log-msg { flex: 1; }
+  .log-item.log-done .log-msg { color: var(--green); }
+  .log-item.log-focus .log-msg { color: #92640a; }
+  .log-item.log-spend .log-msg { color: var(--red); }
+
+  @media(max-width:600px) {
+    .main { grid-template-columns: 1fr; }
+    .focus-panel, .dump-panel, .stats-bar, .log-panel { grid-column: 1; }
+    .tasks-panel, .spend-panel { grid-column: 1; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    ⚡ COMMAND CENTER
+    <span>RAJA · ADHD MODE ON</span>
+  </div>
+  <div class="clock-display">
+    <div id="clock">--:--:--</div>
+    <div class="date" id="dateDisplay">--</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-val c-yellow" id="stat-sessions">0</div>
+      <div class="stat-label">FOCUS SESSIONS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val c-green" id="stat-done">0</div>
+      <div class="stat-label">TASKS DONE</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val c-blue" id="stat-pending">0</div>
+      <div class="stat-label">PENDING</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val c-green" id="stat-revenue">₹0</div>
+      <div class="stat-label">TODAY REVENUE</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val c-red" id="stat-spend">₹0</div>
+      <div class="stat-label">TODAY EXPENSE</div>
+    </div>
+  </div>
+
+  <!-- FOCUS TIMER -->
+  <div class="panel focus-panel">
+    <div class="panel-title"><span class="dot"></span>FOCUS TIMER</div>
+    <div class="timer-area">
+      <div class="timer-circle">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle class="bg-ring" cx="65" cy="65" r="54"/>
+          <circle class="prog-ring" id="progRing" cx="65" cy="65" r="54"/>
+        </svg>
+        <div class="timer-text">
+          <div class="time" id="timerDisplay">25:00</div>
+          <div class="label" id="timerMode">FOCUS</div>
+        </div>
+      </div>
+      <div class="timer-controls">
+        <div class="current-task-display">
+          <div class="ct-label">CURRENT FOCUS</div>
+          <div class="ct-name" id="currentFocusName">— Select a task to focus —</div>
+        </div>
+        <div class="timer-btns">
+          <button class="btn btn-yellow" id="startStopBtn" onclick="toggleTimer()">▶ START</button>
+          <button class="btn btn-ghost" onclick="resetTimer()">↺ RESET</button>
+          <button class="btn btn-ghost" onclick="skipTimer()">⏭ SKIP</button>
+        </div>
+        <div class="presets">
+          <button class="preset-btn active" onclick="setPreset(25, this)">25 MIN</button>
+          <button class="preset-btn" onclick="setPreset(15, this)">15 MIN</button>
+          <button class="preset-btn" onclick="setPreset(45, this)">45 MIN</button>
+          <button class="preset-btn" onclick="setPreset(5, this)">5 MIN BREAK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="panel tasks-panel">
+    <div class="panel-title"><span class="dot" style="background:var(--blue)"></span>TASK QUEUE</div>
+    <div class="task-input-row">
+      <input class="task-input" id="taskInput" placeholder="Type task, press Enter..." onkeydown="if(event.key==='Enter') addTask()">
+      <select class="priority-sel" id="prioritySelect">
+        <option value="high">🔴 HIGH</option>
+        <option value="med" selected>🟡 MED</option>
+        <option value="low">🔵 LOW</option>
+      </select>
+      <button class="btn btn-yellow" onclick="addTask()">+</button>
+    </div>
+    <div class="task-list" id="taskList">
+      <div class="task-empty" id="taskEmpty">No tasks yet. Brain dump below, then add tasks ↓</div>
+    </div>
+  </div>
+
+  <!-- FINANCE TRACKER -->
+  <div class="panel spend-panel">
+    <div class="panel-title"><span class="dot" style="background:var(--green)"></span>FINANCE TRACKER</div>
+
+    <!-- Bank Balance -->
+    <div class="bank-balance-row">
+      <div class="bank-bal-label">🏦 BANK BALANCE</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:0.6rem;color:var(--dim)">SET ₹</span>
+        <input class="spend-input" id="bankBalanceInput" type="number" placeholder="Opening balance" style="width:130px" onchange="updateBankBalance()">
+      </div>
+      <div class="bank-bal-amount" id="bankBalDisplay">₹ —</div>
+    </div>
+
+    <!-- Revenue / Expense Toggle -->
+    <div class="fin-toggle-row">
+      <button class="fin-toggle active" id="toggleRevBtn" onclick="setFinType('revenue')">💰 REVENUE</button>
+      <button class="fin-toggle" id="toggleExpBtn" onclick="setFinType('expense')">💸 EXPENSE</button>
+    </div>
+
+    <!-- Entry row -->
+    <div class="spend-input-row">
+      <input class="spend-input" id="finLabel" placeholder="Description..." onkeydown="if(event.key==='Enter') addFinEntry()">
+      <input class="spend-input amt-input" id="finAmt" type="number" placeholder="₹" onkeydown="if(event.key==='Enter') addFinEntry()">
+      <button class="btn" id="finAddBtn" onclick="addFinEntry()" style="background:var(--green);color:#fff">+</button>
+    </div>
+
+    <!-- List -->
+    <div class="spend-list" id="finList"></div>
+
+    <!-- Summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px">
+      <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:6px;padding:8px 12px">
+        <div style="font-size:0.55rem;color:var(--dim);letter-spacing:2px">TODAY REVENUE</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--green)" id="totalRevenue">₹0</div>
+      </div>
+      <div style="background:var(--red-light);border:1px solid #fecaca;border-radius:6px;padding:8px 12px">
+        <div style="font-size:0.55rem;color:var(--dim);letter-spacing:2px">TODAY EXPENSE</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--red)" id="totalExpense">₹0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRAIN DUMP -->
+  <div class="panel dump-panel">
+    <div class="panel-title"><span class="dot" style="background:var(--purple)"></span>BRAIN DUMP — jo bhi chal raha hai, yahan pheko</div>
+    <textarea class="dump-area" id="dumpArea" placeholder="Thoughts, distractions, ideas — yahan likho aur dimag clear karo. Enter all noise here, then go back to tasks."></textarea>
+    <div class="dump-note">💡 TIP: Distraction aayi? Yahan likho, phir wapas task pe aao. Don't switch tabs.</div>
+  </div>
+
+  <!-- SESSION LOG -->
+  <div class="panel log-panel">
+    <div class="panel-title" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--green)"></span>SESSION LOG</span>
+      <button class="btn btn-ghost" style="font-size:0.55rem;padding:4px 10px" onclick="toggleHistory()">📅 HISTORY</button>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-item"><span class="log-time">--:--</span><span class="log-msg">Session started. Let's lock in. 🔥</span></div>
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel" style="grid-column:1/3;display:none" id="historyPanel">
+    <div class="panel-title" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:var(--purple)"></span>HISTORY — DATE-WISE</span>
+      <button class="btn btn-ghost" style="font-size:0.55rem;padding:4px 10px" onclick="toggleHistory()">✕ CLOSE</button>
+    </div>
+    <div id="historyContent" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+
+</div>
+
+<div class="drift-alert" id="driftAlert">
+  ⚠️ DRIFT ALERT<br>Kya kar raha hai bhai?<br>Wapas task pe aa!
+</div>
+
+<script>
+// ---- SOUND ----
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'done') {
+      // 3-tone success chime
+      [[523, 0], [659, 0.18], [784, 0.36]].forEach(([freq, delay]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.6);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.6);
+      });
+    } else if (type === 'break') {
+      // Single low beep
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    } else if (type === 'tick') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 1000;
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    }
+  } catch(e) {}
+}
+
+// ---- STATE ----
+let tasks = JSON.parse(localStorage.getItem('adhd_tasks') || '[]');
+let spends = JSON.parse(localStorage.getItem('adhd_spends') || '[]');
+let budget = parseInt(localStorage.getItem('adhd_budget') || '0');
+let focusedTaskId = null;
+let sessions = parseInt(localStorage.getItem('adhd_sessions') || '0');
+let doneCount = parseInt(localStorage.getItem('adhd_done') || '0');
+
+// ---- CLOCK ----
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-IN');
+  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ---- TIMER ----
+let timerSeconds = 25 * 60;
+let timerTotal = 25 * 60;
+let timerRunning = false;
+let timerInterval = null;
+let isBreak = false;
+
+function setPreset(mins, btn) {
+  if (timerRunning) return;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  isBreak = mins === 5;
+  timerTotal = mins * 60;
+  timerSeconds = timerTotal;
+  document.getElementById('timerDisplay').textContent = fmtTime(timerSeconds);
+  document.getElementById('timerMode').textContent = isBreak ? 'BREAK' : 'FOCUS';
+  updateProgress();
+}
+
+function fmtTime(s) {
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function updateProgress() {
+  const ring = document.getElementById('progRing');
+  if (!ring) return;
+  const frac = (timerTotal - timerSeconds) / timerTotal;
+  const circ = 2 * Math.PI * 54;
+  const offset = circ - frac * circ;
+  ring.style.strokeDashoffset = offset;
+  ring.style.strokeDasharray = circ;
+  ring.style.stroke = isBreak ? 'var(--green)' : 'var(--accent)';
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('startStopBtn').textContent = '▶ RESUME';
+    addLog('Paused timer.', '');
+  } else {
+    timerRunning = true;
+    document.getElementById('startStopBtn').textContent = '⏸ PAUSE';
+    if (!isBreak) addLog('Focus session started!', 'log-focus');
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      document.getElementById('timerDisplay').textContent = fmtTime(timerSeconds);
+      updateProgress();
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('startStopBtn').textContent = '▶ START';
+        if (!isBreak) {
+          sessions++;
+          localStorage.setItem('adhd_sessions', sessions);
+          updateStats();
+          playSound('done');
+          addLog('✅ Focus session complete! Take a break.', 'log-done');
+          triggerAlert('🔥 Session done! Break le bhai.');
+        } else {
+          playSound('break');
+          addLog('Break over. Wapas kaam pe aao!', 'log-focus');
+          triggerAlert('⚡ Break khatam. FOCUS MODE!');
+        }
+        timerSeconds = timerTotal;
+        document.getElementById('timerDisplay').textContent = fmtTime(timerSeconds);
+        updateProgress();
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = timerTotal;
+  document.getElementById('startStopBtn').textContent = '▶ START';
+  document.getElementById('timerDisplay').textContent = fmtTime(timerSeconds);
+  updateProgress();
+}
+
+function skipTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = timerTotal;
+  document.getElementById('startStopBtn').textContent = '▶ START';
+  document.getElementById('timerDisplay').textContent = fmtTime(timerSeconds);
+  updateProgress();
+  addLog('Session skipped.', '');
+}
+
+// ---- TASKS ----
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const priority = document.getElementById('prioritySelect').value;
+  const name = input.value.trim();
+  if (!name) return;
+  const today = new Date().toISOString().split('T')[0];
+  const task = { id: Date.now(), name, priority, done: false, createdAt: today, completedAt: null };
+  tasks.push(task);
+  saveTasks();
+  renderTasks();
+  input.value = '';
+  addLog(`Added task: "${name}"`, '');
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('taskEmpty');
+  if (tasks.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.style.display = 'block';
+    updateStats();
+    return;
+  }
+  empty.style.display = 'none';
+  const sorted = [...tasks].sort((a,b) => {
+    const p = {high:0, med:1, low:2};
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return p[a.priority] - p[b.priority];
+  });
+  list.innerHTML = '';
+  sorted.forEach(t => {
+    const div = document.createElement('div');
+    div.className = `task-item${t.done?' done':''}${t.id===focusedTaskId?' active-focus':''}`;
+    const badges = {high:'p-high', med:'p-med', low:'p-low'};
+    div.innerHTML = `
+      <div class="task-check${t.done?' checked':''}" onclick="toggleTask(${t.id})"></div>
+      <div class="task-name">${t.name}</div>
+      <span class="priority-badge ${badges[t.priority]}">${t.priority.toUpperCase()}</span>
+      <div class="task-actions">
+        <button class="task-btn focus-btn" title="Focus on this" onclick="setFocus(${t.id}, '${t.name.replace(/'/g,"\\'")}')">⚡</button>
+        <button class="task-btn del-btn" title="Delete" onclick="deleteTask(${t.id})">✕</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+  updateStats();
+}
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) {
+    t.completedAt = new Date().toISOString().split('T')[0];
+    doneCount++;
+    localStorage.setItem('adhd_done', doneCount);
+    addLog(`✅ Done: "${t.name}"`, 'log-done');
+    if (focusedTaskId === id) {
+      focusedTaskId = null;
+      document.getElementById('currentFocusName').textContent = '— Select a task to focus —';
+    }
+  }
+  saveTasks();
+  renderTasks();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  if (focusedTaskId === id) {
+    focusedTaskId = null;
+    document.getElementById('currentFocusName').textContent = '— Select a task to focus —';
+  }
+  saveTasks();
+  renderTasks();
+}
+
+function setFocus(id, name) {
+  focusedTaskId = id;
+  document.getElementById('currentFocusName').textContent = name;
+  renderTasks();
+  addLog(`⚡ Focusing on: "${name}"`, 'log-focus');
+}
+
+function saveTasks() { localStorage.setItem('adhd_tasks', JSON.stringify(tasks)); }
+
+// ---- FINANCE ----
+let finEntries = JSON.parse(localStorage.getItem('adhd_fin') || '[]');
+let bankBalance = parseFloat(localStorage.getItem('adhd_bank') || '0');
+let finType = 'revenue'; // 'revenue' or 'expense'
+
+function setFinType(type) {
+  finType = type;
+  const revBtn = document.getElementById('toggleRevBtn');
+  const expBtn = document.getElementById('toggleExpBtn');
+  const addBtn = document.getElementById('finAddBtn');
+  revBtn.className = 'fin-toggle' + (type === 'revenue' ? ' active revenue' : '');
+  expBtn.className = 'fin-toggle' + (type === 'expense' ? ' active expense' : '');
+  addBtn.style.background = type === 'revenue' ? 'var(--green)' : 'var(--red)';
+}
+
+function addFinEntry() {
+  const label = document.getElementById('finLabel').value.trim();
+  const amt = parseFloat(document.getElementById('finAmt').value);
+  if (!label || isNaN(amt) || amt <= 0) return;
+  const today = new Date().toISOString().split('T')[0];
+  const entry = {
+    id: Date.now(), label, amt, type: finType,
+    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
+    date: today
+  };
+  finEntries.push(entry);
+  if (finType === 'revenue') bankBalance += amt;
+  else bankBalance -= amt;
+  saveFinance();
+  renderFinance();
+  document.getElementById('finLabel').value = '';
+  document.getElementById('finAmt').value = '';
+  const icon = finType === 'revenue' ? '💰' : '💸';
+  const sign = finType === 'revenue' ? '+' : '-';
+  addLog(`${icon} ${sign}₹${amt} — ${label}`, finType === 'revenue' ? 'log-done' : 'log-spend');
+}
+
+function deleteFinEntry(id) {
+  const entry = finEntries.find(e => e.id === id);
+  if (!entry) return;
+  if (entry.type === 'revenue') bankBalance -= entry.amt;
+  else bankBalance += entry.amt;
+  finEntries = finEntries.filter(e => e.id !== id);
+  saveFinance();
+  renderFinance();
+}
+
+function updateBankBalance() {
+  const val = parseFloat(document.getElementById('bankBalanceInput').value);
+  if (!isNaN(val)) {
+    // Recalculate: opening + all revenue - all expense
+    const totalRev = finEntries.filter(e => e.type === 'revenue').reduce((a,b) => a+b.amt, 0);
+    const totalExp = finEntries.filter(e => e.type === 'expense').reduce((a,b) => a+b.amt, 0);
+    bankBalance = val + totalRev - totalExp;
+    localStorage.setItem('adhd_bank_opening', val);
+  }
+  saveFinance();
+  renderFinance();
+}
+
+function renderFinance() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayEntries = finEntries.filter(e => e.date === today);
+  const list = document.getElementById('finList');
+  list.innerHTML = '';
+
+  if (todayEntries.length === 0) {
+    list.innerHTML = '<div style="font-size:0.65rem;color:var(--muted);padding:8px 0;text-align:center">No entries today</div>';
+  } else {
+    [...todayEntries].reverse().forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'fin-item';
+      div.innerHTML = `
+        <div class="fi-left">
+          <div><span class="fi-type-badge ${e.type === 'revenue' ? 'fi-rev' : 'fi-exp'}">${e.type === 'revenue' ? 'REV' : 'EXP'}</span><span class="fi-label">${e.label}</span></div>
+          <span class="fi-time">${e.time}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="${e.type === 'revenue' ? 'fi-amount-rev' : 'fi-amount-exp'}">${e.type === 'revenue' ? '+' : '−'}₹${e.amt}</span>
+          <button class="fi-del" onclick="deleteFinEntry(${e.id})">✕</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  const todayRev = todayEntries.filter(e => e.type === 'revenue').reduce((a,b) => a+b.amt, 0);
+  const todayExp = todayEntries.filter(e => e.type === 'expense').reduce((a,b) => a+b.amt, 0);
+  document.getElementById('totalRevenue').textContent = `₹${todayRev.toLocaleString('en-IN')}`;
+  document.getElementById('totalExpense').textContent = `₹${todayExp.toLocaleString('en-IN')}`;
+  document.getElementById('stat-revenue').textContent = `₹${todayRev.toLocaleString('en-IN')}`;
+  document.getElementById('stat-spend').textContent = `₹${todayExp.toLocaleString('en-IN')}`;
+
+  // Bank balance display
+  const balEl = document.getElementById('bankBalDisplay');
+  balEl.textContent = `₹${bankBalance.toLocaleString('en-IN', {minimumFractionDigits: 0})}`;
+  balEl.className = 'bank-bal-amount ' + (bankBalance >= 0 ? 'positive' : 'negative');
+}
+
+function saveFinance() {
+  localStorage.setItem('adhd_fin', JSON.stringify(finEntries));
+  localStorage.setItem('adhd_bank', bankBalance.toString());
+}
+
+// ---- SPEND (legacy compat) ----
+function addSpend() {}
+function renderSpends() {}
+function deleteSpend() {}
+function clearSpends() {}
+function updateBudget() {}
+function saveSpends() {}
+
+// ---- STATS ----
+function updateStats() {
+  document.getElementById('stat-sessions').textContent = sessions;
+  document.getElementById('stat-done').textContent = doneCount;
+  const pending = tasks.filter(t => !t.done).length;
+  document.getElementById('stat-pending').textContent = pending;
+}
+
+// ---- LOG ----
+function addLog(msg, cls) {
+  const list = document.getElementById('logList');
+  const div = document.createElement('div');
+  div.className = `log-item ${cls}`;
+  const now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
+  list.insertBefore(div, list.firstChild);
+  if (list.children.length > 20) list.removeChild(list.lastChild);
+}
+
+// ---- DRIFT ALERT ----
+function triggerAlert(msg) {
+  const el = document.getElementById('driftAlert');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// 20 min no-activity drift check
+let lastActivity = Date.now();
+document.addEventListener('click', () => lastActivity = Date.now());
+document.addEventListener('keydown', () => lastActivity = Date.now());
+setInterval(() => {
+  if (Date.now() - lastActivity > 20 * 60 * 1000) {
+    triggerAlert('⚠️ Bhai kahan gaya? Wapas aa!');
+    lastActivity = Date.now();
+  }
+}, 60000);
+
+// ---- HISTORY ----
+function toggleHistory() {
+  const panel = document.getElementById('historyPanel');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) renderHistory();
+}
+
+function renderHistory() {
+  const allTasks = JSON.parse(localStorage.getItem('adhd_tasks') || '[]');
+  const allFin = JSON.parse(localStorage.getItem('adhd_fin') || '[]');
+
+  const dates = new Set();
+  allTasks.forEach(t => { if(t.createdAt) dates.add(t.createdAt); if(t.completedAt) dates.add(t.completedAt); });
+  allFin.forEach(e => { if(e.date) dates.add(e.date); });
+
+  const sorted = [...dates].sort((a,b) => b.localeCompare(a));
+  const container = document.getElementById('historyContent');
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<div style="font-size:0.65rem;color:var(--muted);padding:16px;text-align:center">No history yet. Start using the tool!</div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(date => {
+    const dayTasks = allTasks.filter(t => t.createdAt === date || t.completedAt === date);
+    const addedTasks = dayTasks.filter(t => t.createdAt === date);
+    const doneTasks = dayTasks.filter(t => t.done && t.completedAt === date);
+    const dayFin = allFin.filter(e => e.date === date);
+    const dayRev = dayFin.filter(e => e.type === 'revenue').reduce((a,b) => a+b.amt, 0);
+    const dayExp = dayFin.filter(e => e.type === 'expense').reduce((a,b) => a+b.amt, 0);
+    const dayNet = dayRev - dayExp;
+    const fmt = (d) => new Date(d).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+
+    return `
+      <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="background:var(--bg);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--text)">${fmt(date)}</span>
+          <span style="font-size:0.6rem;color:var(--dim)">${doneTasks.length} tasks done · net ${dayNet >= 0 ? '+' : ''}₹${dayNet}</span>
+        </div>
+        ${addedTasks.length ? `
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border)">
+          <div style="font-size:0.55rem;color:var(--dim);letter-spacing:2px;margin-bottom:6px">TASKS</div>
+          ${addedTasks.map(t => `
+            <div style="display:flex;gap:8px;align-items:center;padding:3px 0;font-size:0.7rem">
+              <span style="color:${t.done?'var(--green)':'var(--muted)'}">${t.done?'✓':'○'}</span>
+              <span style="${t.done?'text-decoration:line-through;color:var(--dim)':''}">${t.name}</span>
+              <span style="font-size:0.55rem;color:var(--muted);margin-left:auto">${t.priority.toUpperCase()}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
+        ${dayFin.length ? `
+        <div style="padding:8px 14px">
+          <div style="font-size:0.55rem;color:var(--dim);letter-spacing:2px;margin-bottom:6px">FINANCE</div>
+          ${dayFin.map(e => `
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;padding:3px 0;align-items:center">
+              <span style="color:var(--dim)">${e.time} · <span style="font-size:0.55rem;font-weight:700;padding:1px 5px;border-radius:8px;background:${e.type==='revenue'?'var(--green-light)':'var(--red-light)'};color:${e.type==='revenue'?'var(--green)':'var(--red)'}">${e.type==='revenue'?'REV':'EXP'}</span> ${e.label}</span>
+              <span style="font-weight:700;color:${e.type==='revenue'?'var(--green)':'var(--red)'}">${e.type==='revenue'?'+':'-'}₹${e.amt}</span>
+            </div>
+          `).join('')}
+          <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);font-size:0.65rem;font-weight:700">
+            <span style="color:var(--green)">Rev: ₹${dayRev}</span>
+            <span style="color:var(--red)">Exp: ₹${dayExp}</span>
+            <span style="color:${dayNet>=0?'var(--green)':'var(--red)'}">Net: ${dayNet>=0?'+':''}₹${dayNet}</span>
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const opening = localStorage.getItem('adhd_bank_opening');
+  if (opening) document.getElementById('bankBalanceInput').value = opening;
+  setFinType('revenue');
+  renderTasks();
+  renderFinance();
+  updateStats();
+  updateProgress();
+});
+</script>
+</body>
+</html>
