@@ -1,4 +1,4 @@
-const CACHE = 'adhd-v1';
+const CACHE = 'adhd-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
