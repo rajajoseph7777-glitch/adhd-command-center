@@ -801,18 +801,37 @@ function skipTimer() {
 }
 
 // ---- TASKS ----
+// Debounced localStorage save
+let saveTimeout = null;
+function debouncedSaveTasks() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveTasks();
+    saveTimeout = null;
+  }, 100);
+}
+
 function addTask() {
   const input = document.getElementById('taskInput');
   const priority = document.getElementById('prioritySelect').value;
   const name = input.value.trim();
   if (!name) return;
+  
+  // Show immediate feedback
+  input.value = '';
+  input.blur();
+  
   const today = new Date().toISOString().split('T')[0];
   const task = { id: Date.now(), name, priority, done: false, createdAt: today, completedAt: null };
   tasks.push(task);
-  saveTasks();
-  renderTasks();
-  input.value = '';
-  addLog(`Added task: "${name}"`, '');
+  
+  // Use requestAnimationFrame for smoother rendering
+  requestAnimationFrame(() => {
+    renderTasks();
+    debouncedSaveTasks();
+    addLog(`Added task: "${name}"`, '');
+    input.focus();
+  });
 }
 
 function renderTasks() {
@@ -864,8 +883,10 @@ function toggleTask(id) {
       document.getElementById('currentFocusName').textContent = '— Select a task to focus —';
     }
   }
-  saveTasks();
-  renderTasks();
+  requestAnimationFrame(() => {
+    renderTasks();
+    debouncedSaveTasks();
+  });
 }
 
 function deleteTask(id) {
@@ -874,8 +895,10 @@ function deleteTask(id) {
     focusedTaskId = null;
     document.getElementById('currentFocusName').textContent = '— Select a task to focus —';
   }
-  saveTasks();
-  renderTasks();
+  requestAnimationFrame(() => {
+    renderTasks();
+    debouncedSaveTasks();
+  });
 }
 
 function setFocus(id, name) {
@@ -886,6 +909,23 @@ function setFocus(id, name) {
 }
 
 function saveTasks() { localStorage.setItem('adhd_tasks', JSON.stringify(tasks)); }
+
+// Auto-cleanup old completed tasks (keep last 50)
+function cleanupOldTasks() {
+  const completedTasks = tasks.filter(t => t.done);
+  if (completedTasks.length > 50) {
+    const toKeep = completedTasks.slice(-50); // Keep last 50
+    const toRemove = completedTasks.slice(0, -50);
+    const removeIds = new Set(toRemove.map(t => t.id));
+    tasks = tasks.filter(t => !removeIds.has(t.id));
+    saveTasks();
+    console.log(`Cleaned up ${toRemove.length} old completed tasks`);
+  }
+}
+
+// Run cleanup on page load and periodically
+cleanupOldTasks();
+setInterval(cleanupOldTasks, 5 * 60 * 1000); // Every 5 minutes
 
 // ---- FINANCE ----
 let finEntries = JSON.parse(localStorage.getItem('adhd_fin') || '[]');
